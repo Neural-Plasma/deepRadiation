@@ -29,8 +29,8 @@ class radiation_profile:
   def __init__(self, xgrid, ygrid,sFreq,PyRad):
     self.x = xgrid[:-1,:-1]
     self.y = ygrid[:-1,:-1]
-    self.sFreq = sFreq
-    self.PyRad = PyRad[:-1,:-1] #np.sqrt(np.mean(np.square(PyRad[:,10])))
+    self.sFreq = sFreq/1E9
+    self.PyRad = PyRad[:-1,:-1]/np.max(PyRad) #np.sqrt(np.mean(np.square(PyRad[:,10])))
     self.length = np.max(xgrid[:,0])-np.min(xgrid[:,0])
 #Initialize timer
 task = Timer()
@@ -44,7 +44,7 @@ def main(argv):
     #
     # DD,vv,tt,xx,u1,u2 = initVar(x_left, x_right, t_end, D0, v0, dx, dt, Nx, Nt, ic)
     loadModel = False
-    histplot = False
+    histplot = True
     testplot = True
 
     savedir = 'data'
@@ -66,7 +66,7 @@ def main(argv):
         else:
             print('Training data not found. Run "dataParser.py"')
             exit()
-    inputs = []
+    # inputs = []
     # outputs = []
     xall = []
     yall = []
@@ -76,7 +76,9 @@ def main(argv):
     # print(len(rad_p))
     # exit()
     for obj in rad_p:
-        # inputs.append([obj.x,obj.y])
+        # inputs.append([obj.sFreq,obj.length])
+        # outputs.append([obj.PyRad])
+        # print(obj.PyRad)
         # print(obj.x.shape,obj.y.shape,obj.PyRad.shape)
 
         xall.append(obj.x.reshape(-1))
@@ -101,16 +103,16 @@ def main(argv):
     # yall    = np.array(yall)
     # sFreqall = np.array(sFreqall)
     # lengthall = np.array(lengthall)
-    # PyRadall = np.array(PyRadall).reshape(-1)
+    PyRadall = np.array(PyRadall).reshape(-1)
     # PyRadall = np.array(PyRadall)
 
-    inputs = np.column_stack((xall,yall,sFreqall))
+    inputs = np.column_stack((xall,yall,sFreqall,lengthall))
     # inputs.append(xall)
     # inputs.append(yall)
     # inputs.append(sFreqall)
     # inputs.append(lengthall)
-    inputs  = np.array(inputs)
-    outputs = PyRadall
+    # inputs  = np.array(inputs)
+    outputs = np.array(PyRadall)
     print(inputs.shape,outputs.shape)
     # plt.contourf(outputs[:2048].reshape(64,32))
     # plt.show()
@@ -153,7 +155,7 @@ def main(argv):
     y_chk = np.linspace(0,0.04,32)
     x_grd_chk, y_grd_chk = np.meshgrid(x_chk,y_chk)
 
-    sFreq_chk = 1.5e9
+    sFreq_chk = 2.45e9/1E9
     slength_chk = 0.1
 
 
@@ -164,32 +166,35 @@ def main(argv):
 
     # data_in = np.column_stack((xall[:2048],yall[:2048],sFreqall[:2048],lengthall[:2048]))
 
-    # data_in = np.column_stack((x_chk_all,y_chk_all,sFreq_chk_all,slength_chk_all))
+    data_in = np.column_stack((x_chk_all,y_chk_all,sFreq_chk_all,slength_chk_all))
 
     # data_in = []
-    # data_in.append([x_chk_all,y_chk_all,sFreq_chk,slength_chk])
+    # data_in.append([x_chk_all, y_chk_all, sFreq_chk_all,slength_chk_all])
     # data_in = np.array(data_in)
 
-    # print(data_in.shape)
-    # pRad_approx = deep_approx.predict(data_in)
-    print(x_grd_chk.shape)
+    print(data_in.shape)
+    pRad_approx = deep_approx.predict(data_in)
+    print(pRad_approx,pRad_approx.shape)
+    pRad_approx = pRad_approx.reshape(x_grd_chk.shape)
 #
     # exit()
-
-    pRad_approx = np.zeros(x_grd_chk.shape)
     #
-    for xi, xvals in enumerate(x_chk):
-        for yi, yvals in enumerate(y_chk):
-            # print(xi,yi)
-            input_stencil = np.array([[xvals, yvals, sFreq_chk]])
-            pRad_approx[yi,xi] = deep_approx( input_stencil )[0][0].numpy()
+    # pRad_approx = np.zeros(x_grd_chk.shape)
+    # pRad_approx = np.zeros((64,32))
+    # #
+    # for xi, xvals in enumerate(x_chk):
+    #     for yi, yvals in enumerate(y_chk):
+    #         # print(xi,yi)
+    #         input_stencil = np.array([[xvals, yvals, sFreq_chk,slength_chk]])
+    #         pRad_approx[xi,yi] = deep_approx( input_stencil )[0][0].numpy()
     task.stop()
 
     if testplot:
         fig1 = plt.figure(figsize=(8,6))
         ax1 = fig1.add_subplot(111)
 
-        ax1.contourf(pRad_approx)
+        cnt = ax1.contourf(pRad_approx)
+        plt.colorbar(cnt)
         # ax1 = fig.add_subplot(222)
         # ax2 = fig.add_subplot(223)
         # ax3 = fig.add_subplot(224)

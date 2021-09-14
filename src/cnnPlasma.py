@@ -12,8 +12,10 @@ def dnnSim(inputs,outputs,loadModel,histplot,savedir):
     dev_ratio = 0.2
 
     # Prepare data
-    inputs_array = np.asarray(inputs)
-    outputs_array = np.asarray(outputs)
+    # inputs_array = np.asarray(inputs)
+    # outputs_array = np.asarray(outputs)
+    inputs_array = inputs
+    outputs_array = outputs
 
     # Split into train-dev-test sets
     X_train, X_test, y_train, y_test = train_test_split(inputs_array, outputs_array, test_size=test_ratio, shuffle=False)
@@ -28,18 +30,27 @@ def dnnSim(inputs,outputs,loadModel,histplot,savedir):
         print('Model data does not exist. Building model ...')
         # Build model
         deep_approx = keras.models.Sequential()
-        deep_approx.add(layers.Dense(10, input_dim=4, activation='elu'))
-        deep_approx.add(layers.Dense(100, activation='elu'))
-        deep_approx.add(layers.Dense(100, activation='elu'))
-        deep_approx.add(layers.Dense(1, activation='linear'))
-
+        deep_approx.add(layers.Conv2D(64,2,2, input_shape=(2,64,32),activation='relu'))
+        # deep_approx.add(layers.Conv2D(32,2,2,activation='relu'))
+        # deep_approx.add(layers.Conv2D(16,2,2,activation='relu'))
+        # print(deep_approx.output_shape)
+        deep_approx.add(layers.Flatten())
+        deep_approx.add(layers.Dense(64,activation='relu'))
+        deep_approx.add(layers.Dense(1, activation='softmax'))
+        # deep_approx.add(layers.Flatten())
+        # deep_approx.add(layers.Dense(50, activation='elu'))
+        # deep_approx.add(layers.Dense(50, activation='elu'))
+        # deep_approx.add(layers.Dense(1, activation='linear'))
+        print(deep_approx.output_shape)
         # Compile model
-        deep_approx.compile(loss='mse', optimizer='adam')
+        deep_approx.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
         #FIT
+        validation_split = 0.2
+        verbosity = 1
         history = deep_approx.fit(X_train, y_train,
-                    epochs=100, batch_size=32,
-                    validation_data=(X_dev, y_dev),
-                    callbacks=keras.callbacks.EarlyStopping(patience=10))
+                    epochs=10, batch_size=32,
+                    verbose=verbosity,
+                    validation_split=validation_split)
 
         deep_approx.summary()
         deep_approx.save(pjoin(savedir,'deep_plasma'))
