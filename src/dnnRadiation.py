@@ -6,6 +6,7 @@ from keras import layers
 from sklearn.model_selection import train_test_split
 from os.path import join as pjoin
 import matplotlib.pyplot as plt
+import os.path
 
 def dnnSim(inputs,outputs,loadModel,histplot,savedir):
     test_ratio = 0.25
@@ -25,7 +26,16 @@ def dnnSim(inputs,outputs,loadModel,histplot,savedir):
 
     if loadModel:
         print('Model data exists. loading model ...')
-        deep_approx = keras.models.load_model(pjoin(savedir,'deep_plasma'))
+        deep_approx = keras.models.load_model(pjoin(savedir,'deep_radiation'))
+        # history.history contains loss information
+        if histplot:
+            from diagn import dnn_history_plot as hist_p
+            if os.path.exists(pjoin(savedir,'history_data.npz')):
+                print('Training data found. Loading data...')
+                data = np.load(pjoin(savedir,'history_data.npz'))
+                loss=data['loss']
+                val_loss=data['val_loss']
+                hist_p(loss,val_loss,savedir)
     else:
         print('Model data does not exist. Building model ...')
         # Build model
@@ -49,17 +59,17 @@ def dnnSim(inputs,outputs,loadModel,histplot,savedir):
 
 
         deep_approx.summary()
-        deep_approx.save(pjoin(savedir,'deep_plasma'))
+        deep_approx.save(pjoin(savedir,'deep_radiation'))
+        np.savez_compressed(pjoin(savedir,'history_data.npz'),loss=history.history['loss'][1:],val_loss=history.history['val_loss'][1:])
 
 
         # history.history contains loss information
         if histplot:
-            idx0 = 1
-            plt.figure()
-            plt.semilogy(history.history['loss'][idx0:], '.-', lw=2)
-            plt.semilogy(history.history['val_loss'][idx0:], '.-', lw=2)
-            plt.xlabel('epochs')
-            plt.ylabel('Validation loss')
-            plt.legend(['training loss', 'validation loss'])
-            plt.show()
+            from diagn import dnn_history_plot as hist_p
+            if os.path.exists(pjoin(savedir,'history_data.npz')):
+                print('Training data found. Loading data...')
+                data = np.load(pjoin(savedir,'history_data.npz'))
+                loss=data['loss']
+                val_loss=data['val_loss']
+                hist_p(loss,val_loss,savedir)
     return deep_approx

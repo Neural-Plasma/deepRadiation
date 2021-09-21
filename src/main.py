@@ -23,15 +23,17 @@ from inputParser import inputParams
 from init import initVar
 from advecSolver import solver
 from dnnRadiation import dnnSim
+from sklearn.metrics import mean_squared_error
 
 
 class radiation_profile:
-  def __init__(self, xgrid, ygrid,sFreq,PyRad):
+  def __init__(self, xgrid, ygrid,sFreq,perm,PyRad):
     self.x = xgrid[:-1,:-1]
     self.y = ygrid[:-1,:-1]
     self.sFreq = sFreq
-    self.PyRad = PyRad[:-1,:-1] #np.sqrt(np.mean(np.square(PyRad[:,10])))
-    self.length = np.max(xgrid[:,0])-np.min(xgrid[:,0])
+    self.perm = perm
+    self.PyRad = PyRad
+    # self.PyRad = np.sqrt(np.mean(np.square(PyRad[:,10])))
 #Initialize timer
 task = Timer()
 def main(argv):
@@ -43,31 +45,32 @@ def main(argv):
     # x_left, x_right, t_end, D0, v0, dx, dt, Nx, Nt, nepoch, ic, runSolver, loadModel, savedir, testvals, rawplot, testplot, histplot = inputParams(inputFile)
     #
     # DD,vv,tt,xx,u1,u2 = initVar(x_left, x_right, t_end, D0, v0, dx, dt, Nx, Nt, ic)
-    loadModel = False
-    histplot = False
+    loadModel = True
+    histplot = True
     testplot = True
 
     savedir = 'data'
 
-    datadir = pjoin('..','training_data_processed')
-    runName = ['run1','run2','run3','run4','run5','run6','run7','run8','run9','run10'] #np.arange(1,11)
+    datadir = pjoin('training_data_processed')
+    runName = ['run1','run2','run3','run4','run5','run6','run7','run8','run9','run10','run11','run12','run13','run14','run15','run16','run17','run18','run19','run20'] #np.arange(1,11)
     rad_p = []
     task.start('Loading Training data')
     for i in range(len(runName)):
-        if os.path.exists(pjoin(datadir,runName[i]+'_data.npz')):
+        if os.path.exists(pjoin(datadir,runName[i]+'_syn_data.npz')):
             print('Training data found. Loading data...')
-            data = np.load(pjoin(datadir,runName[i]+'_data.npz'))
+            data = np.load(pjoin(datadir,runName[i]+'_syn_data.npz'))
             xgrid=data['x']
             ygrid=data['y']
             PyRad=data['PyRad']
+            perm=data['perm']
             sFreq=data['sFreq']
-            for j in range(len(sFreq)):
-                rad_p.append(radiation_profile(xgrid,ygrid,sFreq[j],PyRad[j,:,:]))
+            for j in range(len(perm)):
+                rad_p.append(radiation_profile(xgrid,ygrid,sFreq,perm[j],PyRad[j]))
         else:
             print('Training data not found. Run "dataParser.py"')
             exit()
     inputs = []
-    # outputs = []
+    outputs = []
     xall = []
     yall = []
     PyRadall = []
@@ -76,61 +79,25 @@ def main(argv):
     # print(len(rad_p))
     # exit()
     for obj in rad_p:
-        # inputs.append([obj.x,obj.y])
-        # print(obj.x.shape,obj.y.shape,obj.PyRad.shape)
+        inputs.append([obj.sFreq,obj.perm])
+        outputs.append([obj.PyRad])
 
-        xall.append(obj.x.reshape(-1))
-        yall.append(obj.y.reshape(-1))
-        sFreqall.append(np.vstack([obj.sFreq]*len(obj.x.reshape(-1))).reshape(-1))
-        lengthall.append(np.vstack([obj.length]*len(obj.x.reshape(-1))).reshape(-1))
-
-        # inputs.append([obj.x.reshape(-1),obj.y.reshape(-1),np.vstack([obj.sFreq]*len(obj.x.reshape(-1))).reshape(-1),np.vstack([obj.length]*len(obj.x.reshape(-1))).reshape(-1)])
-
-
-        PyRadall.append(obj.PyRad.reshape(-1))
-
-    # print(np.array(xall).shape, np.array(sFreqall).shape,np.array(PyRadall).shape)
-
-    xall    = np.array(xall).reshape(-1)
-    yall    = np.array(yall).reshape(-1)
-    sFreqall = np.array(sFreqall).reshape(-1)
-    lengthall = np.array(lengthall).reshape(-1)
-    PyRadall = np.array(PyRadall).reshape(-1)
-
-    # xall    = np.array(xall)
-    # yall    = np.array(yall)
-    # sFreqall = np.array(sFreqall)
-    # lengthall = np.array(lengthall)
-    # PyRadall = np.array(PyRadall).reshape(-1)
-    # PyRadall = np.array(PyRadall)
-
-    inputs = np.column_stack((xall,yall,sFreqall))
-    # inputs.append(xall)
-    # inputs.append(yall)
-    # inputs.append(sFreqall)
-    # inputs.append(lengthall)
     inputs  = np.array(inputs)
-    outputs = PyRadall
+    outputs = np.array(outputs)
+    # print(np.max(outputs))
     print(inputs.shape,outputs.shape)
+    # print([inputs[0,0],inputs[0,1],outputs[0]])
+    sFreqMax = max(inputs[:,0])
+    permMax = max(inputs[:,1])
+    radMax = np.max(abs(outputs))
+    print(sFreqMax,permMax,radMax)
+    inputs[:,0] /= sFreqMax
+    inputs[:,1] /= permMax
+    outputs /= radMax
     # plt.contourf(outputs[:2048].reshape(64,32))
     # plt.show()
     # exit()
     task.stop()
-
-
-    # if rawplot:
-    #     task.start('Plotting data from good old solver')
-    #     fig0 = plt.figure(figsize=(8,6))
-    #     ax0 = fig0.add_subplot(111)
-    #     ax0.plot(xx, u1[-1, -1,  0, :], lw=2, label="u1,$t_0$")
-    #     ax0.plot(xx, u1[-1, -1, -1, :], lw=2, label="u1,$t_{end}$")
-    #     ax0.plot(xx, u2[-1, -1,  0, :], lw=2, label="u2,$t_0$")
-    #     ax0.plot(xx, u2[-1, -1, -1, :], lw=2, label="u2,$t_{end}$")
-    #     ax0.set_xlabel('$x$')
-    #     ax0.set_ylabel('$u(x, t)$')
-    #     ax0.legend()
-    #     plt.show()
-    #     task.stop()
 
 
     task.start('Deep Neural Network for Plasma')
@@ -149,81 +116,51 @@ def main(argv):
     # e1_mean = []
     # e2_mean = []
     # tt_mean = []
-    x_chk = np.linspace(0,0.1,64)
-    y_chk = np.linspace(0,0.04,32)
-    x_grd_chk, y_grd_chk = np.meshgrid(x_chk,y_chk)
+    # x_chk = np.linspace(0,0.1,64)
+    # y_chk = np.linspace(0,0.04,32)
+    # x_grd_chk, y_grd_chk = np.meshgrid(x_chk,y_chk)
 
-    sFreq_chk = 1.5e9
-    slength_chk = 0.1
+    sFreq_chk = 2.45e9/sFreqMax
+    perm_chk = 0.1/permMax
 
 
-    x_chk_all = x_grd_chk.reshape(-1)
-    y_chk_all = y_grd_chk.reshape(-1)
-    sFreq_chk_all = np.ones(x_chk_all.shape)*sFreq_chk
-    slength_chk_all = np.ones(x_chk_all.shape)*slength_chk
+    # x_chk_all = x_grd_chk.reshape(-1)
+    # y_chk_all = y_grd_chk.reshape(-1)
+    # sFreq_chk_all = np.ones(x_chk_all.shape)*sFreq_chk
+    # slength_chk_all = np.ones(x_chk_all.shape)*slength_chk
 
     # data_in = np.column_stack((xall[:2048],yall[:2048],sFreqall[:2048],lengthall[:2048]))
 
     # data_in = np.column_stack((x_chk_all,y_chk_all,sFreq_chk_all,slength_chk_all))
 
-    # data_in = []
-    # data_in.append([x_chk_all,y_chk_all,sFreq_chk,slength_chk])
-    # data_in = np.array(data_in)
-
-    # print(data_in.shape)
-    # pRad_approx = deep_approx.predict(data_in)
-    print(x_grd_chk.shape)
+#     data_in = []
+#     data_in.append([sFreq_chk,perm_chk])
+#     data_in = np.array(data_in)
 #
-    # exit()
+#     pRad_approx = deep_approx.predict(data_in)
+#     print(pRad_approx)
 
-    pRad_approx = np.zeros(x_grd_chk.shape)
-    #
-    for xi, xvals in enumerate(x_chk):
-        for yi, yvals in enumerate(y_chk):
-            # print(xi,yi)
-            input_stencil = np.array([[xvals, yvals, sFreq_chk]])
-            pRad_approx[yi,xi] = deep_approx( input_stencil )[0][0].numpy()
+    len_dataset = 1000
+    s1 = 500
+    pRad_approx = np.zeros(len_dataset)
+    for i in range(len_dataset):
+        data_in = []
+        data_in.append([inputs[i+s1,0],inputs[i+s1,1]])
+        data_in = np.array(data_in)
+        pRad_approx[i] = deep_approx.predict(data_in)
+
+    no_data_arr = range(len_dataset)
+    pRad_true = outputs.reshape(-1)[s1:(s1+len_dataset)]
+    pRad_predict = pRad_approx
+    MSE = mean_squared_error(pRad_true,pRad_predict)
+    two_sigma = 2 * np.sqrt(MSE)  # 2*sigma ~ 95% confidence region
+    if testplot:
+        from diagn import comparison_plot as comp_p
+        comp_p(no_data_arr,pRad_true,pRad_approx,two_sigma,savedir)
     task.stop()
 
-    if testplot:
-        fig1 = plt.figure(figsize=(8,6))
-        ax1 = fig1.add_subplot(111)
 
-        ax1.contourf(pRad_approx)
-        # ax1 = fig.add_subplot(222)
-        # ax2 = fig.add_subplot(223)
-        # ax3 = fig.add_subplot(224)
-        # for idx, i in enumerate(idxes):
-        #     data_in = np.array([ [tt[i], x] for x in xx])
-        #     u_approx = deep_approx.predict(data_in)
-        #     ax0.plot(xx, u_approx[:,0], lw=2, color=c[idx%len(c)])
-        #     ax0.plot(xx, u1[i, :], lw=2, linestyle='--')
-        #     ax1.plot(xx, u_approx[:,1], lw=2, color=c[idx%len(c)])
-        #     ax1.plot(xx, u2[i, :], lw=2, linestyle='--')
-        #     tt_mean.append(tt[i])
-        #     e1_mean.append( np.mean((u_approx[:, 0] - u1[i, :])**2) )
-        #     e2_mean.append( np.mean((u_approx[:, 1] - u2[i, :])**2) )
-        #
 
-        # ax2.plot(tt_mean, e1_mean, '.-', lw=2, color=c[0], markersize=10)
-        # ax2.plot([(1-test_ratio)*t_end]*2, [min(e1_mean), max(e1_mean)], ':', color=c[1])
-        # ax2.legend(['RMSE', 'Train/dev time horizon'])
-        #
-        # ax3.plot(tt_mean, e2_mean, '.-', lw=2, color=c[0], markersize=10)
-        # ax3.plot([(1-test_ratio)*t_end]*2, [min(e2_mean), max(e2_mean)], ':', color=c[1])
-        # ax3.legend(['RMSE', 'Train/dev time horizon'])
-        #
-        ax1.set_xlabel('$x$')
-        ax1.set_ylabel('$y$')
-        # ax1.set_xlabel('$x$')
-        # ax1.set_ylabel('$u2(x, t)$')
-        # # ax0.legend(['$t^*_{end}$'])
-        # ax2.set_ylabel('Error1')
-        # ax3.set_ylabel('Error2')
-        #
-        # fig.tight_layout()
-
-        plt.show()
 
 
 
