@@ -1,0 +1,19 @@
+name: deepRadiation
+channels:
+  - default
+dependencies:
+  - python>=3.8
+  - pip
+  - numpy>=1.20.2
+  - tensorflow
+  - keras
+  - scikit-learn
+  - matplotlib
+  - pip:
+    - ini-parser
+    - argparse
+    - pyevtk
+    - h5py
+  #   - numba
+  #   - argparse
+  #   - scipy
