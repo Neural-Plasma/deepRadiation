@@ -1,4 +1,5 @@
 # deepRadiation
+[![DOI](https://zenodo.org/badge/386719346.svg)](https://zenodo.org/badge/latestdoi/386719346)
 
 A Deep Neural Network-based radiation pressure prediction using TensorFlow.
 
