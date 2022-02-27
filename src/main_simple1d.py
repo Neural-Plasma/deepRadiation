@@ -44,7 +44,7 @@ def main(argv):
     # x_left, x_right, t_end, D0, v0, dx, dt, Nx, Nt, nepoch, ic, runSolver, loadModel, savedir, testvals, rawplot, testplot, histplot = inputParams(inputFile)
     #
     # DD,vv,tt,xx,u1,u2 = initVar(x_left, x_right, t_end, D0, v0, dx, dt, Nx, Nt, ic)
-    loadModel = False
+    loadModel = True
     histplot = True
     testplot = False
 

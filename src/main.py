@@ -37,17 +37,15 @@ class radiation_profile:
 #Initialize timer
 task = Timer()
 def main(argv):
-    # parser = argparse.ArgumentParser(description='Deep Neural Network for Plasma Radiation (deepRadiation)')
-    # parser.add_argument('-i','--input', default='input.ini', type=str, help='Input file name')
-    # args        = parser.parse_args()
-    # inputFile   = args.input
-    #
-    # x_left, x_right, t_end, D0, v0, dx, dt, Nx, Nt, nepoch, ic, runSolver, loadModel, savedir, testvals, rawplot, testplot, histplot = inputParams(inputFile)
-    #
-    # DD,vv,tt,xx,u1,u2 = initVar(x_left, x_right, t_end, D0, v0, dx, dt, Nx, Nt, ic)
-    loadModel = True
-    histplot = True
-    testplot = True
+    parser = argparse.ArgumentParser(description='Deep Neural Network for Plasma Radiation (deepRadiation)')
+    parser.add_argument('-l','--load', action='store_true', help='Add this if you want to load the model data')
+    parser.add_argument('-hp','--histp', action='store_true', help='Add this to plot history')
+    parser.add_argument('-tp','--testp', action='store_true', help='Add this to plot test values')
+    args        = parser.parse_args()
+
+    loadModel = args.load
+    histplot = args.histp
+    testplot = args.testp
 
     savedir = 'data'
 
@@ -109,36 +107,9 @@ def main(argv):
     # exit()
 
     task.start('Test Model')
-    # nplots = 11
-    # rmin = 0
-    # rmax = 1
-    # idxes = np.arange(int(rmin*len(tt)), int(rmax*len(tt)), int((rmax-rmin)*len(tt)/nplots))
-    # e1_mean = []
-    # e2_mean = []
-    # tt_mean = []
-    # x_chk = np.linspace(0,0.1,64)
-    # y_chk = np.linspace(0,0.04,32)
-    # x_grd_chk, y_grd_chk = np.meshgrid(x_chk,y_chk)
 
     sFreq_chk = 2.45e9/sFreqMax
     perm_chk = 0.1/permMax
-
-
-    # x_chk_all = x_grd_chk.reshape(-1)
-    # y_chk_all = y_grd_chk.reshape(-1)
-    # sFreq_chk_all = np.ones(x_chk_all.shape)*sFreq_chk
-    # slength_chk_all = np.ones(x_chk_all.shape)*slength_chk
-
-    # data_in = np.column_stack((xall[:2048],yall[:2048],sFreqall[:2048],lengthall[:2048]))
-
-    # data_in = np.column_stack((x_chk_all,y_chk_all,sFreq_chk_all,slength_chk_all))
-
-#     data_in = []
-#     data_in.append([sFreq_chk,perm_chk])
-#     data_in = np.array(data_in)
-#
-#     pRad_approx = deep_approx.predict(data_in)
-#     print(pRad_approx)
 
     len_dataset = 1000
     s1 = 500

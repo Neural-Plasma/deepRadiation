@@ -37,7 +37,7 @@ def dnn_history_plot(loss,val_loss,dir):
     ax.semilogy(loss, lw=1.5)
     ax.semilogy(val_loss, lw=1.5)
     ax.set_xlabel('Epochs')
-    ax.set_ylabel('L1')
+    ax.set_ylabel('L2 loss')
     ax.legend(['Training loss', 'Validation loss'])
     plt.savefig(pjoin(dir, 'model_history.png'),dpi=dpi)
     plt.show()
